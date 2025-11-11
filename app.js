@@ -8,6 +8,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const BACKEND = process.env.BACKEND_BASE_URL;
 if (!BACKEND) throw new Error('BACKEND_BASE_URL is not set.');
+const ALWAYS_RETURN_200 = process.env.ALWAYS_RETURN_200 === 'true';
 
 // IMPORTANT: capture raw body (do NOT use express.json())
 app.use(express.raw({ type: '*/*' }));
@@ -25,6 +26,25 @@ function forwardHeaders(req) {
   return headers;
 }
 
+function getResponseStatus(status) {
+  return ALWAYS_RETURN_200 ? 200 : status;
+}
+
+app.options('*', async (req, res) => {
+  try {
+    const response = await axios({
+      method: 'options',
+      url: `${BACKEND}${req.originalUrl}`,
+      headers: forwardHeaders(req),
+      validateStatus: () => true,
+    });
+    res.status(getResponseStatus(response.status)).set(response.headers).send(response.data);
+  } catch (e) {
+    const status = e.response?.status ?? 502;
+    res.status(getResponseStatus(status)).set(e.response?.headers ?? {}).send(e.response?.data ?? 'Upstream error');
+  }
+});
+
 app.post('*', async (req, res) => {
   try {
     const response = await axios({
@@ -37,27 +57,27 @@ app.post('*', async (req, res) => {
       maxBodyLength: Infinity,
       validateStatus: () => true,
     });
-    res.status(response.status).set(response.headers).send(response.data);
+    res.status(getResponseStatus(response.status)).set(response.headers).send(response.data);
   } catch (e) {
     const status = e.response?.status ?? 502;
-    res.status(status).send(e.response?.data ?? 'Upstream error');
+    res.status(getResponseStatus(status)).set(e.response?.headers ?? {}).send(e.response?.data ?? 'Upstream error');
   }
 });
 
 // accepts GET requests at the /webhook endpoint. You need this URL to setup webhook initially.
 // info on verification request payload: https://developers.facebook.com/docs/graph-api/webhooks/getting-started#verification-requests
 app.get("*", async (req, res) => {
-  let status;
-  let data;
   try {
-    const response = await axios.get(`${BACKEND}${req.originalUrl}`)
-    status = response.status;
-    data = response.data;
+    const response = await axios({
+      method: 'get',
+      url: `${BACKEND}${req.originalUrl}`,
+      headers: forwardHeaders(req),
+      validateStatus: () => true,
+    });
+    res.status(getResponseStatus(response.status)).set(response.headers).send(response.data);
   } catch (e) {
-    status = e.response.status;
-    data = e.response.data;
-  } finally {
-    res.status(status).send(data.content);
+    const status = e.response?.status ?? 502;
+    res.status(getResponseStatus(status)).set(e.response?.headers ?? {}).send(e.response?.data ?? 'Upstream error');
   }
 });
 
