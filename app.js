@@ -16,12 +16,14 @@ app.use(express.raw({ type: '*/*' }));
 function forwardHeaders(req) {
   // clone incoming headers and drop hop-by-hop/unsafe ones
   const headers = { ...req.headers };
+  // console.log('headers', headers);
 
   // These should be set by axios based on the data we send
   delete headers['content-length'];
   delete headers['transfer-encoding'];
   // Avoid forwarding the proxy's host
   delete headers['host'];
+  delete headers['x-forwarded-host'];
 
   return headers;
 }
@@ -32,12 +34,21 @@ function getResponseStatus(status) {
 
 app.options('*', async (req, res) => {
   try {
+    let url;
+    if (req.originalUrl.startsWith('/oauth2')) {
+      const suffix = req.originalUrl.replace('/oauth2', '');
+      url = `${BACKEND.replace('mcp-', 'oauth2-')}${suffix}`;
+      console.log('Routing to oauth2 backend from ', req.originalUrl, ' to ', url);
+    } else {
+      url = `${BACKEND}${req.originalUrl}`;
+    }
     const response = await axios({
       method: 'options',
-      url: `${BACKEND}${req.originalUrl}`,
+      url: url || `${BACKEND}${req.originalUrl}`,
       headers: forwardHeaders(req),
       validateStatus: () => true,
     });
+    console.log(`Forwarding OPTIONS request to: ${url} (${req.originalUrl})`);
     res.status(getResponseStatus(response.status)).set(response.headers).send(response.data);
   } catch (e) {
     const status = e.response?.status ?? 502;
@@ -55,7 +66,7 @@ app.post('*', async (req, res) => {
     } else {
       url = `${BACKEND}${req.originalUrl}`;
     }
-    console.log(`Forwarding POST request to: ${url}`);
+    console.log(`Forwarding POST request to: ${url} (${req.originalUrl})`);
     const response = await axios({
       method: 'post',
       url: url || `${BACKEND}${req.originalUrl}`,
@@ -84,8 +95,10 @@ app.get("*", async (req, res) => {
       console.log('Routing to oauth2 backend from ', req.originalUrl, ' to ', url);
     } else {
       url = `${BACKEND}${req.originalUrl}`;
+      url = url.replace('/oauth2', '');
     }
-    console.log(`Forwarding GET request to: ${url}`);
+    const url2 = url || `${BACKEND}${req.originalUrl}`
+    console.log(`Forwarding GET request to: ${url} (${req.originalUrl}) / (${url2}) headers: ${forwardHeaders(req)}`);
     const response = await axios({
       method: 'get',
       url: url || `${BACKEND}${req.originalUrl}`,
@@ -95,6 +108,7 @@ app.get("*", async (req, res) => {
     res.status(getResponseStatus(response.status)).set(response.headers).send(response.data);
   } catch (e) {
     const status = e.response?.status ?? 502;
+    console.log('error', e);
     res.status(getResponseStatus(status)).set(e.response?.headers ?? {}).send(e.response?.data ?? 'Upstream error');
   }
 });
