@@ -23,8 +23,9 @@ function forwardHeaders(req) {
   delete headers['transfer-encoding'];
   // Avoid forwarding the proxy's host
   delete headers['host'];
-  delete headers['x-forwarded-host'];
+  // delete headers['x-forwarded-host'];
 
+  headers['ngrok-skip-browser-warning'] = 'true';
   return headers;
 }
 
@@ -35,9 +36,10 @@ function getResponseStatus(status) {
 app.options('*', async (req, res) => {
   try {
     let url;
-    if (req.originalUrl.startsWith('/oauth2')) {
+    if (req.originalUrl.startsWith('/chatgpt/authorize/oauth2')) {
       const suffix = req.originalUrl.replace('/oauth2', '');
       url = `${BACKEND.replace('mcp-', 'oauth2-')}${suffix}`;
+      url = url.replace('/chatgpt', '');
       console.log('Routing to oauth2 backend from ', req.originalUrl, ' to ', url);
     } else {
       url = `${BACKEND}${req.originalUrl}`;
@@ -59,9 +61,10 @@ app.options('*', async (req, res) => {
 app.post('*', async (req, res) => {
   try {
     let url;
-    if (req.originalUrl.startsWith('/oauth2')) {
+    if (req.originalUrl.startsWith('/chatgpt/authorize/oauth2')) {
       const suffix = req.originalUrl.replace('/oauth2', '');
       url = `${BACKEND.replace('mcp-', 'oauth2-')}${suffix}`;
+      url = url.replace('/chatgpt', '');
       console.log('Routing to oauth2 backend from ', req.originalUrl, ' to ', url);
     } else {
       url = `${BACKEND}${req.originalUrl}`;
@@ -78,6 +81,7 @@ app.post('*', async (req, res) => {
       validateStatus: () => true,
     });
     res.status(getResponseStatus(response.status)).set(response.headers).send(response.data);
+    console.log('>>> response', response.data);
   } catch (e) {
     const status = e.response?.status ?? 502;
     res.status(getResponseStatus(status)).set(e.response?.headers ?? {}).send(e.response?.data ?? 'Upstream error');
@@ -89,9 +93,10 @@ app.post('*', async (req, res) => {
 app.get("*", async (req, res) => {
   try {
     let url;
-    if (req.originalUrl.startsWith('/oauth2')) {
+    if (req.originalUrl.startsWith('/chatgpt/authorize/oauth2')) {
       const suffix = req.originalUrl.replace('/oauth2', '');
       url = `${BACKEND.replace('mcp-', 'oauth2-')}${suffix}`;
+      url = url.replace('/chatgpt', '');
       console.log('Routing to oauth2 backend from ', req.originalUrl, ' to ', url);
     } else {
       url = `${BACKEND}${req.originalUrl}`;

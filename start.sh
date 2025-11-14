@@ -28,8 +28,8 @@ tmux new-session -d -s basic-proxy -x 200 -y 50
 tmux split-window -h -t basic-proxy
 
 # Run node app in left pane (pane 0)
-tmux send-keys -t basic-proxy:0.0 "source .env && node app.js" C-m
-# tmux send-keys -t basic-proxy:0.0 "source .env && npm run dev" C-m
+#tmux send-keys -t basic-proxy:0.0 "source .env && node app.js" C-m
+tmux send-keys -t basic-proxy:0.0 "source .env && npm run dev" C-m
 
 # Run ngrok in right pane (pane 1)
 tmux send-keys -t basic-proxy:0.1 "source .env && ngrok http \$PORT --url=\$NGROK_URL --host-header=rewrite" C-m
