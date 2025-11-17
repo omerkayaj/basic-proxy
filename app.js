@@ -32,12 +32,24 @@ function getResponseStatus(status) {
 
 app.options('*', async (req, res) => {
   try {
+    let url;
+    if (req.originalUrl.endsWith('/oauth2')) {
+      const suffix = req.originalUrl.replace('/oauth2', '');
+      url = `${BACKEND.replace('mcp-', 'oauth2-')}${suffix}`;
+      url = url.replace('/chatgpt', '');
+      console.log('Routing to oauth2 backend from ', req.originalUrl, ' to ', url);
+    } else if (req.originalUrl.endsWith('/register-public-client')) {
+      url = req.originalUrl.replace('/chatgpt', '');
+    } else {
+      url = `${BACKEND}${req.originalUrl}`;
+    }
     const response = await axios({
       method: 'options',
-      url: `${BACKEND}${req.originalUrl}`,
+      url: url,
       headers: forwardHeaders(req),
       validateStatus: () => true,
     });
+    console.log(`Forwarding OPTIONS request to: ${url} (${req.originalUrl})`);
     res.status(getResponseStatus(response.status)).set(response.headers).send(response.data);
   } catch (e) {
     const status = e.response?.status ?? 502;
@@ -48,9 +60,10 @@ app.options('*', async (req, res) => {
 app.post('*', async (req, res) => {
   try {
     let url;
-    if (req.originalUrl.startsWith('/oauth2')) {
+    if (req.originalUrl.endsWith('/oauth2')) {
       const suffix = req.originalUrl.replace('/oauth2', '');
       url = `${BACKEND.replace('mcp-', 'oauth2-')}${suffix}`;
+      url = url.replace('/chatgpt', '');
       console.log('Routing to oauth2 backend from ', req.originalUrl, ' to ', url);
     } else {
       url = `${BACKEND}${req.originalUrl}`;
@@ -78,9 +91,10 @@ app.post('*', async (req, res) => {
 app.get("*", async (req, res) => {
   try {
     let url;
-    if (req.originalUrl.startsWith('/oauth2')) {
+    if (req.originalUrl.endsWith('/oauth2')) {
       const suffix = req.originalUrl.replace('/oauth2', '');
       url = `${BACKEND.replace('mcp-', 'oauth2-')}${suffix}`;
+      url = url.replace('/chatgpt', '');
       console.log('Routing to oauth2 backend from ', req.originalUrl, ' to ', url);
     } else {
       url = `${BACKEND}${req.originalUrl}`;
