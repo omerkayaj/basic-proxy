@@ -32,17 +32,18 @@ function getResponseStatus(status) {
 
 app.options('*', async (req, res) => {
   try {
-    let url;
-    if (req.originalUrl.endsWith('/oauth2')) {
-      const suffix = req.originalUrl.replace('/oauth2', '');
-      url = `${BACKEND.replace('mcp-', 'oauth2-')}${suffix}`;
-      url = url.replace('/chatgpt', '');
-      console.log('Routing to oauth2 [chatgpt] backend from ', req.originalUrl, ' to ', url);
-    } else if (req.originalUrl.endsWith('/register-public-client')) {
-      url = req.originalUrl.replace('/chatgpt', '');
+    let url = BACKEND;
+
+    if (req.originalUrl.includes('oauth-authorization-server') || 
+      req.originalUrl.includes('oauth2') || 
+      req.originalUrl.includes('token') || 
+      req.originalUrl.includes('register-public-client')) {
+      url = `${BACKEND.replace('mcp-', 'oauth2-')}${req.originalUrl}`;
+      url = url.replace('/chatgpt-app', '');
     } else {
       url = `${BACKEND}${req.originalUrl}`;
     }
+
     const response = await axios({
       method: 'options',
       url: url,
@@ -59,16 +60,19 @@ app.options('*', async (req, res) => {
 
 app.post('*', async (req, res) => {
   try {
-    let url;
-    if (req.originalUrl.endsWith('/oauth2')) {
-      const suffix = req.originalUrl.replace('/oauth2', '');
-      url = `${BACKEND.replace('mcp-', 'oauth2-')}${suffix}`;
-      url = url.replace('/chatgpt', '');
-      console.log('Routing to oauth2 [chatgpt] backend from ', req.originalUrl, ' to ', url);
+    let url = BACKEND;
+
+    if (req.originalUrl.includes('oauth-authorization-server') || 
+      req.originalUrl.includes('oauth2') || 
+      req.originalUrl.includes('token') || 
+      req.originalUrl.includes('register-public-client')) {
+      url = `${BACKEND.replace('mcp-', 'oauth2-')}${req.originalUrl}`;
+      url = url.replace('/chatgpt-app', '');
     } else {
       url = `${BACKEND}${req.originalUrl}`;
     }
-    console.log(`Forwarding POST [chatgpt] request to: ${url}`);
+
+    console.log(`Forwarding POST [chatgpt] request to: ${url} from (${req.originalUrl})`);
     const response = await axios({
       method: 'post',
       url: url || `${BACKEND}${req.originalUrl}`,
@@ -86,21 +90,22 @@ app.post('*', async (req, res) => {
   }
 });
 
-// accepts GET requests at the /webhook endpoint. You need this URL to setup webhook initially.
-// info on verification request payload: https://developers.facebook.com/docs/graph-api/webhooks/getting-started#verification-requests
 app.get("*", async (req, res) => {
   try {
-    let url;
-    if (req.originalUrl.endsWith('/oauth2')) {
-      const suffix = req.originalUrl.replace('/oauth2', '');
-      url = `${BACKEND.replace('mcp-', 'oauth2-')}${suffix}`;
-      url = url.replace('/chatgpt', '');
-      console.log('Routing to oauth2 [chatgpt] backend from ', req.originalUrl, ' to ', url);
+    let url = BACKEND
+
+    if (req.originalUrl.includes('oauth-authorization-server') || 
+      req.originalUrl.includes('oauth2') || 
+      req.originalUrl.includes('token') || 
+      req.originalUrl.includes('register-public-client')) {
+      url = `${BACKEND.replace('mcp-', 'oauth2-')}${req.originalUrl}`;
+      url = url.replace('/chatgpt-app', '');
     } else {
       url = `${BACKEND}${req.originalUrl}`;
     }
+
     url = url.replace('/chatgpt', '');
-    console.log(`Forwarding GET [chatgpt] request to: ${url}`);
+    console.log(`Forwarding GET [chatgpt] request to: ${url} from (${req.originalUrl})`);
     const response = await axios({
       method: 'get',
       url: url || `${BACKEND}${req.originalUrl}`,
