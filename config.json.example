@@ -8,6 +8,7 @@
     },
     "chatgpt": {
       "BACKEND_BASE_URL": "https://mcp-omerkaya.jotform.pro",
+      "ENV": "enterprise",
       "NGROK_URL": "https://welcomed-whale-light.ngrok-free.app"
     }
   },
