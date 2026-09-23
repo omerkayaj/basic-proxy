@@ -4,8 +4,10 @@ const axios = require('axios');
 const { get } = require('./proxy-config.cjs');
 
 const app = express();
-const { port: PORT, backend: BACKEND, mcpBaseUrl: MCP_BACKEND, ngrok: NGROK_URL, alwaysReturn200: ALWAYS_RETURN_200 } = get();
+const { port: PORT, backend: BACKEND, mcpBaseUrl: MCP_BACKEND, jotformEnv: JOTFORM_ENV, authorizeBaseUrl: AUTHORIZE_BACKEND, ngrok: NGROK_URL, alwaysReturn200: ALWAYS_RETURN_200 } = get();
 const PROXY_BACKEND = MCP_BACKEND || BACKEND;
+// Token exchange and client registration stay on the oauth2 host: /register-public-client
+// is only served there. Only /authorize follows the configured environment.
 const OAUTH_BACKEND = PROXY_BACKEND.replace('mcp-', 'oauth2-');
 // IMPORTANT: capture raw body (do NOT use express.json())
 app.use(express.raw({ type: '*/*' }));
@@ -48,7 +50,7 @@ app.get('/.well-known/oauth-authorization-server', (req, res) => {
   const baseUrl = NGROK_URL || `https://${req.headers['x-forwarded-host'] || req.headers.host}`;
   res.json({
     issuer: baseUrl,
-    authorization_endpoint: `${OAUTH_BACKEND}/authorize`,
+    authorization_endpoint: `${AUTHORIZE_BACKEND}/authorize`,
     token_endpoint: `${baseUrl}/token`,
     registration_endpoint: `${baseUrl}/register-public-client`,
     scopes_supported: [],
@@ -150,4 +152,4 @@ app.get("*", async (req, res) => {
     res.status(getResponseStatus(status)).set(e.response?.headers ?? {}).send(e.response?.data ?? 'Upstream error');
   }
 });
-app.listen(PORT, () => console.log(`ChatGPT Apps Proxy on :${PORT}`));
+app.listen(PORT, () => console.log(`ChatGPT Apps Proxy on :${PORT} (env: ${JOTFORM_ENV}, authorize: ${AUTHORIZE_BACKEND})`));

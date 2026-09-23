@@ -49,6 +49,7 @@ console.log(userConfig.MCP_BASE_URL || '');
 console.log(userConfig.NGROK_URL);
 console.log(p);
 console.log(ar);
+console.log(userConfig.ENV || 'default');
 ")
 
 if [ $? -ne 0 ]; then
@@ -60,12 +61,14 @@ CONFIG_MCP_BASE_URL=$(echo "$CONFIG_OUTPUT" | sed -n '2p')
 CONFIG_NGROK_URL=$(echo "$CONFIG_OUTPUT" | sed -n '3p')
 CONFIG_PORT=$(echo "$CONFIG_OUTPUT" | sed -n '4p')
 CONFIG_ALWAYS=$(echo "$CONFIG_OUTPUT" | sed -n '5p')
+CONFIG_ENV=$(echo "$CONFIG_OUTPUT" | sed -n '6p')
 
 export BACKEND_BASE_URL=$CONFIG_BACKEND_BASE_URL
 export MCP_BASE_URL=$CONFIG_MCP_BASE_URL
 export NGROK_URL=$CONFIG_NGROK_URL
 export PORT=${CONFIG_PORT:-3000}
 export ALWAYS_RETURN_200=${CONFIG_ALWAYS:-false}
+export ENV=${CONFIG_ENV:-default}
 export BASIC_PROXY_USER=$USER
 export BASIC_PROXY_USECASE=$APP_USECASE
 
@@ -102,6 +105,7 @@ fi
 echo "Starting proxy for user: $USER, usecase: $APP_USECASE"
 echo "BACKEND_BASE_URL: $BACKEND_BASE_URL"
 echo "MCP_BASE_URL: $MCP_BASE_URL"
+echo "ENV: $ENV"
 echo "NGROK_URL: $NGROK_URL"
 echo "App file: $APP_FILE"
 
@@ -115,7 +119,7 @@ tmux new-session -d -s basic-proxy -x 200 -y 50
 tmux split-window -h -t basic-proxy
 
 # Run node app in left pane (pane 0)
-tmux send-keys -t basic-proxy:0.0 "export BACKEND_BASE_URL='$BACKEND_BASE_URL' && export MCP_BASE_URL='$MCP_BASE_URL' && export NGROK_URL='$NGROK_URL' && export PORT='$PORT' && export ALWAYS_RETURN_200='$ALWAYS_RETURN_200' && export BASIC_PROXY_USER='$USER' && export BASIC_PROXY_USECASE='$APP_USECASE' && node $APP_FILE" C-m
+tmux send-keys -t basic-proxy:0.0 "export BACKEND_BASE_URL='$BACKEND_BASE_URL' && export MCP_BASE_URL='$MCP_BASE_URL' && export ENV='$ENV' && export NGROK_URL='$NGROK_URL' && export PORT='$PORT' && export ALWAYS_RETURN_200='$ALWAYS_RETURN_200' && export BASIC_PROXY_USER='$USER' && export BASIC_PROXY_USECASE='$APP_USECASE' && node $APP_FILE" C-m
 
 # Run ngrok in right pane (pane 1)
 tmux send-keys -t basic-proxy:0.1 "export NGROK_URL='$NGROK_URL' && export PORT='$PORT' && ngrok http \$PORT --url=\$NGROK_URL --host-header=rewrite" C-m

@@ -23,6 +23,13 @@ Root of `config.json` (optional, defaults: port `3000`, `ALWAYS_RETURN_200` fals
 
 Then each key like `ock` / `hami` is a user, with `instagram` and `chatgpt` blocks containing `BACKEND_BASE_URL` and `NGROK_URL`. See `config.json.example`.
 
+The `chatgpt` block also accepts:
+
+- `MCP_BASE_URL` — MCP host the proxy forwards requests to (defaults to `BACKEND_BASE_URL`)
+- `ENV` — Jotform environment to connect to: `default`, `enterprise`, `hipaa`, `soc2` or `gov` (defaults to `default`)
+
+`ENV` picks the RDS host that serves `/authorize` — for example `enterprise` resolves to `https://enterprise-<developer>.jotform.pro/oa2`. That host is baked into the OAuth token, and the MCP server sends every API call to it, so `ENV` is what decides which environment you end up in. Switching `ENV` needs a proxy restart, and the MCP client must drop its cached token so it re-runs the OAuth flow.
+
 **Without `./start.sh`:** run the app with the same `config.json` and:
 
 ```bash
